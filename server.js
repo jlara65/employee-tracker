@@ -1,6 +1,7 @@
 const db = require('./db/connection');
 const inquirer = require('inquirer');
 const Employee = require('../../Module 10/team-profile-generator/lib/Employee');
+require('console.table');
 
 
 db.connect(err => {
@@ -34,7 +35,7 @@ const startApp = () => {
     .then(answers => {
         switch (answers.option){
             case "View All Employees":
-                console.log('View All Employees')
+                getAllEmployees()
                 break;
             case "Add Employee":
                 addEmployee()
@@ -43,10 +44,10 @@ const startApp = () => {
                 console.log('Update Employee Role')
                 break;
             case "View All Roles":
-                console.log('View All Roles')
+                getAllRoles()
                 break;
             case "View All Departments":
-                console.log('View All Departments')
+                getAllDepartments()
                 break;
             case "Add Department":
                 console.log('Add Department')
@@ -108,3 +109,30 @@ const addEmployee = () => {
         startApp();
     });
 };
+
+const getAllEmployees = () => {
+    const sql = `SELECT * FROM employees`;
+
+    db.query(sql, function (err, results) {
+        console.table(results);
+        startApp();
+    });
+}
+
+const getAllDepartments = () => {
+    const sql = `SELECT * FROM departments`;
+
+    db.query(sql, function (err, results) {
+        console.table(results);
+        startApp();
+    });
+}
+
+const getAllRoles = () => {
+    const sql = `SELECT * FROM roles`;
+
+    db.query(sql, function (err, results) {
+        console.table(results);
+        startApp();
+    });
+}
