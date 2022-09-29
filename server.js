@@ -50,7 +50,7 @@ const startApp = () => {
                 getAllDepartments()
                 break;
             case "Add Department":
-                console.log('Add Department')
+                addDepartment()
                 break;
         }
     });
@@ -110,8 +110,37 @@ const addEmployee = () => {
     });
 };
 
+const addDepartment = () => {
+    return inquirer.prompt ([
+        {
+            type: 'input',
+            name: 'deptName',
+            message: 'What is the name of the department?'
+        }
+    ])
+    .then(answer => {
+        const sql = `INSERT INTO departments (name)
+                 VALUES ('${answer.deptName}')`;
+        db.query(sql, function (err, results) {
+            console.log(`${answer.deptName} has added to the Department database!`);
+            startApp();
+        });
+    })
+    
+}
+
 const getAllEmployees = () => {
-    const sql = `SELECT * FROM employees`;
+    const sql = `SELECT employees.id AS 'Employee ID', 
+                        employees.first_name AS 'First Name', 
+                        employees.last_name AS 'Last Name',
+                        roles.title AS Title, 
+                        departments.name AS Department, 
+                        roles.salary AS Salary, 
+                        CONCAT(manager.first_name,' ',manager.last_name )  AS Manager
+                FROM employees 
+                LEFT JOIN roles ON employees.role_id = roles.id 
+                LEFT JOIN departments ON roles.department_id = departments.id 
+                LEFT JOIN employees manager ON manager.id = employees.manager_id ORDER BY employees.id`;
 
     db.query(sql, function (err, results) {
         console.table(results);
@@ -120,7 +149,9 @@ const getAllEmployees = () => {
 }
 
 const getAllDepartments = () => {
-    const sql = `SELECT * FROM departments`;
+    const sql = `SELECT departments.id AS 'ID', 
+                        departments.name AS 'Department Name'
+                 FROM departments`;
 
     db.query(sql, function (err, results) {
         console.table(results);
@@ -129,7 +160,12 @@ const getAllDepartments = () => {
 }
 
 const getAllRoles = () => {
-    const sql = `SELECT * FROM roles`;
+    const sql = `SELECT roles.id as ID, 
+                        roles.title as 'Job Title', 
+                        departments.name as Department, 
+                        roles.salary as Salary  
+                 FROM roles 
+                 LEFT JOIN departments ON roles.department_id = departments.id`;
 
     db.query(sql, function (err, results) {
         console.table(results);
