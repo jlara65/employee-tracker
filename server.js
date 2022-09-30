@@ -1,15 +1,11 @@
 const db = require('./db/connection');
 const inquirer = require('inquirer');
+const figlet = require('figlet');
 require('console.table');
 
 db.connect(err => {
     if (err) throw err;
-    console.log(`
-    +=======================================================+
-    | HELLO EMPLOYEE MANAGER                                |
-    |                                                       |
-    +=======================================================+
-    `)
+    console.log(figlet.textSync('Welcome Employee Manager!'));
     startApp();
 });
 
@@ -234,13 +230,13 @@ const getAllRoles = () => {
 
 const quit = () => {
     inquirer.prompt({
-        type: 'list',
+        type: 'confirm',
         name: 'quitResponse',
-        Message: 'End this application?',
-        choices: ['Yes', 'No']
+        message: 'End this application?'
     })
     .then((answer) => {
-        if (answer.quitResponse === 'Yes') {
+        if (answer.quitResponse === true) {
+            console.log(figlet.textSync('BYE!!'));
             db.end();
         } else {
             startApp();
