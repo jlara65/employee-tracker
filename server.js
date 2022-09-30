@@ -1,8 +1,6 @@
 const db = require('./db/connection');
 const inquirer = require('inquirer');
-const Employee = require('../../Module 10/team-profile-generator/lib/Employee');
 require('console.table');
-
 
 db.connect(err => {
     if (err) throw err;
@@ -41,7 +39,7 @@ const startApp = () => {
                 addEmployee()
                 break;
             case "Update Employee Role":
-                console.log('Update Employee Role')
+                rolePrompt()
                 break;
             case "View All Roles":
                 getAllRoles()
@@ -126,9 +124,56 @@ const addDepartment = () => {
             startApp();
         });
     })
-    
 }
 
+const rolePrompt = () => {
+    const sql ='SELECT * FROM departments';
+
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+
+        inquirer.prompt ([
+            {
+                type: 'input',
+                name: 'roleName',
+                message: 'What is the name of role? '
+            },
+            {
+                type: 'input',
+                name: 'roleSalary',
+                message: 'What is the salary of the role? '
+            },
+            {
+                type: 'rawlist',
+                name: 'roleDept',
+                message: 'Which department does this role belong to? ',
+                choices: function () {
+                    var arrChoices = [];
+                    for (var i = 0; i < result.length; i++) {
+                        arrChoices.push(result[i].name);
+                    }
+                    return arrChoices;
+                }
+            }
+        ])
+        .then((answer) => {
+            const sql = `SELECT * FROM departments
+                         WHERE ?`;
+            
+            db.query(sql, { name: answer.roleDept }, (err, result) => {
+                if (err) throw err;
+                console.log(result[0].id);
+
+                const sql2 = `INSERT INTO roles SET ?`;
+                db.query(sql2, {title: answer.roleName, salary: answer.roleSalary, department_id: parseInt(result[0].id)});
+            });
+            console.log('Role has been added to database..');
+            startApp();
+        });
+    });
+}
+       
+    
 const getAllEmployees = () => {
     const sql = `SELECT employees.id AS 'Employee ID', 
                         employees.first_name AS 'First Name', 
