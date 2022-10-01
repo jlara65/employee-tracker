@@ -1,9 +1,7 @@
 const db = require('./db/connection');
 const inquirer = require('inquirer');
 const figlet = require('figlet');
-// const { listenerCount } = require('./db/connection');
 require('console.table');
-
 
 db.connect(err => {
     if (err) throw err;
@@ -23,6 +21,7 @@ const startApp = () => {
                 'Add Employee',
                 'Remove Employee',
                 'Update Employee Role',
+                'Update Employee Manager',
                 'View All Roles',
                 'Add Role',
                 'Remove Role',
@@ -45,6 +44,9 @@ const startApp = () => {
                 break;
             case "Update Employee Role":
                 updateEmployeeRole()
+                break;
+            case "Update Employee Manager":
+                updateEmployeeManager()
                 break;
             case "View All Roles":
                 getAllRoles()
@@ -234,6 +236,47 @@ const updateEmployeeRole = async () => {
         console.log(err);
         db.end();
     };
+}
+
+const updateEmployeeManager = async () => {
+    try {
+        console.log("Update Employee's manager");
+        let employees = await db.query(`SELECT * FROM employees`);
+        let employeeChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'employeePick',
+                message: "Which employee's manager do you want to update? ",
+                choices: employees.map((employeeName) => {
+                    return {
+                        name: employeeName.first_name+ " " + employeeName.last_name,
+                        value: employeeName.id
+                    }
+                })
+            }
+        ]);
+        let managers = await db.query(`SELECT * FROM employees`);
+        let managerChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'managerPick',
+                message: "Which manager do you want to assign the selected employee? ",
+                choices: managers.map((managerName) => {
+                    return {
+                        name: managerName.first_name+ " " + managerName.last_name,
+                        value: managerName.id
+                    }
+                })
+            }
+        ]);
+        let result = await db.query(`UPDATE employees SET ? WHERE ?`,
+                                   [{ manager_id: managerChoice.managerPick }, {id: employeeChoice.employeePick}]);
+        console.log("Update the employee's manager!");
+        startApp();
+    } catch(err) {
+        console.log(err);
+        db.end();
+    }
 }
 
 const deleteEmployee = async () => {
