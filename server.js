@@ -21,9 +21,11 @@ const startApp = () => {
             choices: [
                 'View All Employees',
                 'Add Employee',
+                'Remove Employee',
                 'Update Employee Role',
                 'View All Roles',
                 'Add Role',
+                'Remove Role',
                 'View All Departments',
                 'Add Department',
                 'Done'
@@ -38,6 +40,9 @@ const startApp = () => {
             case "Add Employee":
                 addEmployee()
                 break;
+            case "Remove Employee":
+                deleteEmployee()
+                break;
             case "Update Employee Role":
                 updateEmployeeRole()
                 break;
@@ -46,6 +51,9 @@ const startApp = () => {
                 break;
             case "Add Role":
                 addRole()
+                break;
+            case "Remove Role":
+                deleteRole()
                 break;
             case "View All Departments":
                 getAllDepartments()
@@ -221,6 +229,62 @@ const updateEmployeeRole = async () => {
                                      [{ role_id: roleChoice.rolePick }, { id: employeeChoice.employeePick }]);
         
         console.log("Updated the employee's role");
+        startApp();
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
+}
+
+const deleteEmployee = async () => {
+    try {
+        console.log('Remove employee');
+
+        let employees = await db.query(`SELECT * FROM employees`);
+        let employeeChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'employeePick',
+                message: "Which employee do you want to remove? ",
+                choices: employees.map((employeeName) => {
+                    return {
+                        name: employeeName.first_name + " " + employeeName.last_name,
+                        value: employeeName.id
+                    }
+                })
+            }
+        ]);
+        let result = await db.query(`DELETE FROM employees WHERE ?`, [{ id: employeeChoice.employeePick}]);
+
+        console.log(`Selected employee has been removes from database!`);
+        startApp();
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
+}
+
+const deleteRole = async () => {
+    try {
+        console.log('Remove Role');
+
+        let roles = await db.query(`SELECT * FROM roles`);
+        let roleChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'rolePick',
+                message: "Which role do you want to remove? ",
+                choices: roles.map((role) => {
+                    return {
+                        name: role.title,
+                        value: role.id
+                    }
+                })
+            }
+        ]);
+        let result = await db.query(`DELETE FROM roles WHERE ?`, [{ id: roleChoice.rolePick}]);
+
+        console.log(`Selected role has been removes from database!`);
         startApp();
     } catch (err) {
         console.log(err);
