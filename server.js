@@ -25,9 +25,10 @@ const startApp = () => {
                 'View All Roles',
                 'Add Role',
                 'Remove Role',
+                'View Employee by Managers',
                 'View All Departments',
                 'Add Department',
-                'Done'
+                'Quit'
             ]
         }
     ])
@@ -56,6 +57,9 @@ const startApp = () => {
                 break;
             case "Remove Role":
                 deleteRole()
+                break;
+            case "View Employee by Managers":
+                viewByManager()
                 break;
             case "View All Departments":
                 getAllDepartments()
@@ -379,11 +383,28 @@ const getAllRoles = () => {
     });
 }
 
+const viewByManager = () => {
+    const sql = `SELECT CONCAT(manager.first_name, ' ', manager.last_name) as Manager, 
+                               departments.name as Department, 
+                        CONCAT(employees.first_name, ' ', employees.last_name) as Employee, 
+                               roles.title
+                 FROM employees
+                 LEFT JOIN employees manager ON manager.id = employees.manager_id
+                 INNER JOIN roles ON (roles.id = employees.role_id && employees.manager_id != 'NULL')
+                 INNER JOIN departments ON (departments.id = roles.department_id)
+                 ORDER BY manager`;
+
+    db.query(sql, function (err, results) {
+        console.table(results);
+        startApp();
+    })
+}
+
 const quit = () => {
     inquirer.prompt({
         type: 'confirm',
         name: 'quitResponse',
-        message: 'End this application?'
+        message: 'Exit this application?'
     })
     .then((answer) => {
         if (answer.quitResponse === true) {
