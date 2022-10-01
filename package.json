@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bluebird": "^3.7.2",
     "console.table": "^0.10.0",
     "dotenv": "^16.0.2",
     "figlet": "^1.5.2",

@@ -1,4 +1,5 @@
 const mysql = require('mysql2');
+const util = require('util');
 
 require('dotenv').config();
 
@@ -14,5 +15,6 @@ const db = mysql.createConnection(
     },
     console.log('Connected to the employee_db database')
 )
+db.query = util.promisify(db.query);
 
 module.exports = db;

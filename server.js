@@ -1,7 +1,9 @@
 const db = require('./db/connection');
 const inquirer = require('inquirer');
 const figlet = require('figlet');
+// const { listenerCount } = require('./db/connection');
 require('console.table');
+
 
 db.connect(err => {
     if (err) throw err;
@@ -21,6 +23,7 @@ const startApp = () => {
                 'Add Employee',
                 'Update Employee Role',
                 'View All Roles',
+                'Add Role',
                 'View All Departments',
                 'Add Department',
                 'Done'
@@ -36,10 +39,13 @@ const startApp = () => {
                 addEmployee()
                 break;
             case "Update Employee Role":
-                rolePrompt()
+                updateEmployeeRole()
                 break;
             case "View All Roles":
                 getAllRoles()
+                break;
+            case "Add Role":
+                addRole()
                 break;
             case "View All Departments":
                 getAllDepartments()
@@ -54,71 +60,65 @@ const startApp = () => {
     });
 };
 
-const addEmployee = () => {
-    const sql = `SELECT * FROM roles`;
+const addEmployee = async () => {
+    try {
+        console.log('Employee Add');
 
-    db.query(sql, (err, result) => {
-        if (err) throw err;
+        let roles = await db.query(`SELECT * FROM roles`);
 
-        inquirer.prompt ([
-        {
-            type: 'input',
-            name: 'first_name',
-            message: "Employee's first name? ",
-            validate: fnInput => {
-                if(fnInput) {
-                    return true;
-                } else {
-                    console.log('Please enter a valid first name!');
-                    return false;
-                }
+        let managers = await db.query(`SELECT * FROM employees`);
+
+        let answer = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'first_name',
+                message: 'Please enter the employee first name?'
+            },
+            {
+                type: 'input',
+                name: 'last_name',
+                message: 'Please enter the employee last name?'
+            },
+            {
+                type: 'list',
+                name: 'role_id',
+                message: "What is this Employee's role id?",
+                choices: roles.map((role) => {
+                    return {
+                        name: role.title,
+                        value: role.id
+                    }
+                }),
+            },
+            {
+                type: 'list',
+                name: 'manager_id',
+                message: "What is this Employee's Manager's Id?",
+                choices: managers.map((manager) => {
+                    return {
+                        name: manager.first_name + " " + manager.last_name,
+                        value: manager.id
+                    }
+                }),
             }
-        },
-        {
-            type: 'input',
-            name: 'last_name',
-            message: "Employee's last name? ",
-            validate: lnInput => {
-                if(lnInput) {
-                    return true;
-                } else {
-                    console.log('Please enter a valid last name!');
-                    return false;
-                }
-            }
-        },
-        {
-            type: 'rawlist',
-            name: 'role_id',
-            message: "Employee's role? ",
-            choices: function () {
-                var arrChoices = [];
-                for (var i = 0; i < result.length; i++) {
-                    arrChoices.push(result[i].title);
-                }
-                return arrChoices;
-            }
-        }
+        ])
 
-    ])
-    .then(answers => {
-        const sql = `SELECT * FROM roles WHERE ?`;
-        
-        db.query(sql, { title: answers.role_id }, (err, result) => {
-            if(err) throw err;
-
-            const sql2 = `INSERT INTO employees SET ?`;
-            db.query(sql2, {
-                            first_name: answers.first_name,
-                            last_name: answers.last_name,
-                            role_id: result[0].id
-                });
-            console.log('Employee has been added to database...');
-            startApp();
-            });
+        let result = await db.query("INSERT INTO employees SET ?", {
+            first_name: answer.first_name,
+            last_name: answer.last_name,
+            role_id: (answer.role_id),
+            manager_id: (answer.manager_id)
         });
-    });
+
+        console.log(`${answer.first_name} ${answer.last_name} added successfully.\n`);
+       startApp();
+
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
 }
+
 const addDepartment = () => {
     return inquirer.prompt ([
         {
@@ -137,7 +137,7 @@ const addDepartment = () => {
     })
 }
 
-const rolePrompt = () => {
+const addRole = () => {
     const sql ='SELECT * FROM departments';
 
     db.query(sql, (err, result) => {
@@ -182,6 +182,50 @@ const rolePrompt = () => {
             startApp();
         });
     });
+}
+
+const updateEmployeeRole = async () => {
+    try {
+        console.log("Update Employee's role");
+
+        let employees = await db.query(`SELECT * FROM employees`);
+        let employeeChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'employeePick',
+                message: "Which employee's role do you want to update? ",
+                choices: employees.map((employeeName) => {
+                    return {
+                        name: employeeName.first_name + " " + employeeName.last_name,
+                        value: employeeName.id
+                    }
+                })
+            }
+        ]);
+        let roles = await db.query(`SELECT * FROM roles`);
+        let roleChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'rolePick',
+                message: 'Which role do you want to assign the selected employee? ',
+                choices: roles.map((roleName) => {
+                    return {
+                        name: roleName.title,
+                        value: roleName.id
+                    }
+                })
+            }
+        ]);
+
+        let result = await db.query(`UPDATE employees SET ? WHERE ?`,
+                                     [{ role_id: roleChoice.rolePick }, { id: employeeChoice.employeePick }]);
+        
+        console.log("Updated the employee's role");
+        startApp();
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
 }
         
 const getAllEmployees = () => {
