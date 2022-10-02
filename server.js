@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const figlet = require('figlet');
 require('console.table');
 
+// Initialize connect to the database
 db.connect(err => {
     if (err) throw err;
     console.log(figlet.textSync('Welcome Employee Manager!'));
@@ -24,9 +25,9 @@ const startApp = () => {
                 'Update Employee Manager',
                 'View All Roles',
                 'Add Role',
-                'Remove Role',
                 'View Employee by Managers',
                 'View All Departments',
+                'View Employees by Departments',
                 'Add Department',
                 'Quit'
             ]
@@ -55,25 +56,26 @@ const startApp = () => {
             case "Add Role":
                 addRole()
                 break;
-            case "Remove Role":
-                deleteRole()
-                break;
             case "View Employee by Managers":
                 viewByManager()
                 break;
             case "View All Departments":
                 getAllDepartments()
                 break;
+            case "View Employees by Departments":
+                viewByDepartment();
+                break;
             case "Add Department":
                 addDepartment()
                 break;
-            case "Done":
+            case "Quit":
                 quit()
                 break;
         }
     });
 };
 
+// prompt user to add the employee info
 const addEmployee = async () => {
     try {
         console.log('Employee Add');
@@ -124,7 +126,7 @@ const addEmployee = async () => {
             manager_id: (answer.manager_id)
         });
 
-        console.log(`${answer.first_name} ${answer.last_name} added successfully.\n`);
+        console.log(`\n ${answer.first_name} ${answer.last_name} added successfully.\n`);
        startApp();
 
     } catch (err) {
@@ -133,6 +135,7 @@ const addEmployee = async () => {
     };
 }
 
+// prompt user to add the name of department
 const addDepartment = () => {
     return inquirer.prompt ([
         {
@@ -145,12 +148,13 @@ const addDepartment = () => {
         const sql = `INSERT INTO departments (name)
                  VALUES ('${answer.deptName}')`;
         db.query(sql, function (err, results) {
-            console.log(`${answer.deptName} has added to the Department database!`);
+            console.log(`\n ${answer.deptName} has added to the Department database! \n`);
             startApp();
         });
     })
 }
 
+// prompt user to add the name of role
 const addRole = () => {
     const sql ='SELECT * FROM departments';
 
@@ -182,22 +186,17 @@ const addRole = () => {
             }
         ])
         .then((answer) => {
-            const sql = `SELECT * FROM departments
-                         WHERE ?`;
-            
-            db.query(sql, { name: answer.roleDept }, (err, result) => {
-                if (err) throw err;
-                console.log(result[0].id);
+            const sql2 = `INSERT INTO roles SET ?`;
+                
+            db.query(sql2, {title: answer.roleName, salary: answer.roleSalary, department_id: parseInt(result[0].id)});
 
-                const sql2 = `INSERT INTO roles SET ?`;
-                db.query(sql2, {title: answer.roleName, salary: answer.roleSalary, department_id: parseInt(result[0].id)});
-            });
-            console.log('Role has been added to database..');
+            console.log('\n Role has been added to the database.. \n');
             startApp();
         });
     });
 }
 
+// prompt user to update one of their employees' role
 const updateEmployeeRole = async () => {
     try {
         console.log("Update Employee's role");
@@ -234,7 +233,7 @@ const updateEmployeeRole = async () => {
         let result = await db.query(`UPDATE employees SET ? WHERE ?`,
                                      [{ role_id: roleChoice.rolePick }, { id: employeeChoice.employeePick }]);
         
-        console.log("Updated the employee's role");
+        console.log("\n Updated the employee's role \n");
         startApp();
     } catch (err) {
         console.log(err);
@@ -242,6 +241,7 @@ const updateEmployeeRole = async () => {
     };
 }
 
+// prompt user to update one of their employees' manager
 const updateEmployeeManager = async () => {
     try {
         console.log("Update Employee's manager");
@@ -275,7 +275,7 @@ const updateEmployeeManager = async () => {
         ]);
         let result = await db.query(`UPDATE employees SET ? WHERE ?`,
                                    [{ manager_id: managerChoice.managerPick }, {id: employeeChoice.employeePick}]);
-        console.log("Update the employee's manager!");
+        console.log("\n Update the employee's manager! \n");
         startApp();
     } catch(err) {
         console.log(err);
@@ -283,34 +283,7 @@ const updateEmployeeManager = async () => {
     }
 }
 
-const deleteEmployee = async () => {
-    try {
-        console.log('Remove employee');
-
-        let employees = await db.query(`SELECT * FROM employees`);
-        let employeeChoice = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'employeePick',
-                message: "Which employee do you want to remove? ",
-                choices: employees.map((employeeName) => {
-                    return {
-                        name: employeeName.first_name + " " + employeeName.last_name,
-                        value: employeeName.id
-                    }
-                })
-            }
-        ]);
-        let result = await db.query(`DELETE FROM employees WHERE ?`, [{ id: employeeChoice.employeePick}]);
-
-        console.log(`Selected employee has been removes from database!`);
-        startApp();
-    } catch (err) {
-        console.log(err);
-        db.end();
-    };
-}
-
+/* BUG!! WHEN REMOVED ROLE AND IT WILL REMOVE THE EMPLOYEE DATA.
 const deleteRole = async () => {
     try {
         console.log('Remove Role');
@@ -331,14 +304,15 @@ const deleteRole = async () => {
         ]);
         let result = await db.query(`DELETE FROM roles WHERE ?`, [{ id: roleChoice.rolePick}]);
 
-        console.log(`Selected role has been removes from database!`);
+        console.log(`\n Selected role has been removed from database! \n`);
         startApp();
     } catch (err) {
         console.log(err);
         db.end();
     };
-}
+} */
         
+// Display the table with whole of employees' information
 const getAllEmployees = () => {
     const sql = `SELECT employees.id AS 'Employee ID', 
                         employees.first_name AS 'First Name', 
@@ -358,6 +332,7 @@ const getAllEmployees = () => {
     });
 }
 
+// Display the table with whole of department information
 const getAllDepartments = () => {
     const sql = `SELECT departments.id AS 'ID', 
                         departments.name AS 'Department Name'
@@ -369,6 +344,7 @@ const getAllDepartments = () => {
     });
 }
 
+// Display the table with whole of roles information
 const getAllRoles = () => {
     const sql = `SELECT roles.id as ID, 
                         roles.title as 'Job Title', 
@@ -383,6 +359,7 @@ const getAllRoles = () => {
     });
 }
 
+// Display the table to view the employees group by manager
 const viewByManager = () => {
     const sql = `SELECT CONCAT(manager.first_name, ' ', manager.last_name) as Manager, 
                                departments.name as Department, 
@@ -400,6 +377,22 @@ const viewByManager = () => {
     })
 }
 
+// Display the the table to view the employees group by department
+const viewByDepartment = () => {
+    const sql = `SELECT departments.name AS department, 
+                        roles.title, 
+                 CONCAT(employees.first_name, ' ', employees.last_name) as Employee
+                 FROM employees
+                 LEFT JOIN roles ON (roles.id = employees.role_id)
+                 LEFT JOIN departments ON (departments.id = roles.department_id)
+                 ORDER BY departments.name`;
+    db.query(sql, function (err, results) {
+        console.table(results);
+        startApp();
+    })
+}
+
+// Confirm user if want to end of this session
 const quit = () => {
     inquirer.prompt({
         type: 'confirm',
