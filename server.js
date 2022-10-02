@@ -1,4 +1,5 @@
-const db = require('./db/connection');
+// importing modules
+const db = require('./db/connection'); 
 const inquirer = require('inquirer');
 const figlet = require('figlet');
 require('console.table');
@@ -25,10 +26,12 @@ const startApp = () => {
                 'Update Employee Manager',
                 'View All Roles',
                 'Add Role',
+                'Remove Role',
                 'View Employee by Managers',
                 'View All Departments',
                 'View Employees by Departments',
                 'Add Department',
+                'Remove Department',
                 'Quit'
             ]
         }
@@ -56,6 +59,9 @@ const startApp = () => {
             case "Add Role":
                 addRole()
                 break;
+            case "Remove Role":
+                deleteRole()
+                break;
             case "View Employee by Managers":
                 viewByManager()
                 break;
@@ -67,6 +73,9 @@ const startApp = () => {
                 break;
             case "Add Department":
                 addDepartment()
+                break;
+            case "Remove Department":
+                deleteDept()
                 break;
             case "Quit":
                 quit()
@@ -283,7 +292,36 @@ const updateEmployeeManager = async () => {
     }
 }
 
-/* BUG!! WHEN REMOVED ROLE AND IT WILL REMOVE THE EMPLOYEE DATA.
+// prompt user to remove one of their employees
+const deleteEmployee = async () => {
+    try {
+        console.log('Remove employee');
+
+        let employees = await db.query(`SELECT * FROM employees`);
+        let employeeChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'employeePick',
+                message: "Which employee do you want to remove? ",
+                choices: employees.map((employeeName) => {
+                    return {
+                        name: employeeName.first_name + " " + employeeName.last_name,
+                        value: employeeName.id
+                    }
+                })
+            }
+        ]);
+        let result = await db.query(`DELETE FROM employees WHERE ?`, [{ id: employeeChoice.employeePick}]);
+
+        console.log(`Selected employee has been removes from database!`);
+        startApp();
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
+}
+
+// prompt user to remove one of the role
 const deleteRole = async () => {
     try {
         console.log('Remove Role');
@@ -310,7 +348,36 @@ const deleteRole = async () => {
         console.log(err);
         db.end();
     };
-} */
+}
+
+// prompt user to remove one of their employees
+const deleteDept = async () => {
+    try {
+        console.log('Remove Department');
+
+        let departments = await db.query(`SELECT * FROM departments`);
+        let deptChoice = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'deptPick',
+                message: "Which department do you want to remove? ",
+                choices: departments.map((deptName) => {
+                    return {
+                        name: deptName.name,
+                        value: deptName.id
+                    }
+                })
+            }
+        ]);
+        let result = await db.query(`DELETE FROM departments WHERE ?`, [{ id: deptChoice.deptPick}]);
+
+        console.log(`Selected department has been removes from database!`);
+        startApp();
+    } catch (err) {
+        console.log(err);
+        db.end();
+    };
+}
         
 // Display the table with whole of employees' information
 const getAllEmployees = () => {
